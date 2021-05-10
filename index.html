@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        textarea {
+            width: 90%;
+            height: 200px;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        输入：
+        <br>
+        <textarea id="inputTextarea"></textarea>
+        <br>
+        <button id="getButton" onclick="get()">获取</button>
+        <br>
+        输出：
+        <br>
+        <textarea id="outputTextarea"></textarea>
+    </div>
+</body>
+<script src="https://cdn.jsdelivr.net/npm/axios@0.21.1/dist/axios.min.js"></script>
+<script>
+    const downloadTxt = (filename, text) => {
+        const pom = document.createElement("a");
+        pom.setAttribute(
+            "href",
+            "data:text/plain;charset=utf-8," + encodeURIComponent(text)
+        );
+        pom.setAttribute("download", filename);
+        pom.click();
+    }
+
+    const get = async () => {
+        const inputTextarea = document.getElementById("inputTextarea")
+        const outputTextarea = document.getElementById("outputTextarea")
+        const getButton = document.getElementById("getButton")
+
+        getButton.innerText = "获取中..."
+
+        const proteins = inputTextarea.value.split("\n").map(p => p.trim())
+        const genes = []
+        for (const v of proteins) {
+            genes.push(await getGene(v))
+        }
+
+        const genesStr = genes.join("\n")
+        outputTextarea.value = genesStr
+        downloadTxt("genes.txt", genesStr)
+        
+        getButton.innerText = "获取"
+    }
+
+    const getGene = async (name) => {
+        try {
+            const response = await axios.get(`https://www.uniprot.org/uniprot/${name}`)
+            const parser = new DOMParser()
+            const dom = parser.parseFromString(response.data, "text/html")
+            const gene = dom.getElementById("content-gene").getElementsByTagName("h2")[0].innerText
+            return gene
+        } catch (error) {
+            console.log(error)
+            return "无法查询到结果"
+        }
+    }
+    
+</script>
+</html>
