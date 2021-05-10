@@ -18,7 +18,7 @@
         <br>
         <textarea id="inputTextarea"></textarea>
         <br>
-        <button id="getButton" onclick="get()">获取</button>
+        <button id="getButton" onclick="getAsync()">获取</button>
         <br>
         输出：
         <br>
@@ -37,17 +37,35 @@
         pom.click();
     }
 
-    const get = async () => {
+    const getGeneAsync = async (name) => {
+        try {
+            const response = await axios.get(`https://www.uniprot.org/uniprot/${name}`)
+            const parser = new DOMParser()
+            const dom = parser.parseFromString(response.data, "text/html")
+            const table = dom.querySelector("#names_and_taxonomy > table > tbody > tr:nth-child(2) > td.noBorders").children
+            for (const d of table) {
+                if (d.innerText.indexOf("Ordered Locus Names:") != -1) {
+                    return d.children[1].innerText
+                }
+            }
+        } catch (error) {
+            console.log(error)
+        }
+        return "无法查询到结果"
+    }
+
+    const getAsync = async () => {
         const inputTextarea = document.getElementById("inputTextarea")
         const outputTextarea = document.getElementById("outputTextarea")
         const getButton = document.getElementById("getButton")
 
         getButton.innerText = "获取中..."
 
-        const proteins = inputTextarea.value.split("\n").map(p => p.trim())
+        const proteins = inputTextarea.value.split("\n").map(p => p.trim()).filter(p => p != "")
+        // const genes = await Promise.all(proteins.map(p => getGeneAsync(p)))
         const genes = []
         for (const v of proteins) {
-            genes.push(await getGene(v))
+            genes.push(await getGeneAsync(v))
         }
 
         const genesStr = genes.join("\n")
@@ -56,19 +74,5 @@
         
         getButton.innerText = "获取"
     }
-
-    const getGene = async (name) => {
-        try {
-            const response = await axios.get(`https://www.uniprot.org/uniprot/${name}`)
-            const parser = new DOMParser()
-            const dom = parser.parseFromString(response.data, "text/html")
-            const gene = dom.getElementById("content-gene").getElementsByTagName("h2")[0].innerText
-            return gene
-        } catch (error) {
-            console.log(error)
-            return "无法查询到结果"
-        }
-    }
-    
 </script>
 </html>
